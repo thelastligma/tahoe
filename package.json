@@ -33,8 +33,7 @@
     },
     "files": [
       "**/*",
-      "!node_modules/**/*",
-      "node_modules/node-fetch/**/*"
+      "!node_modules/**/*"
     ],
     "mac": {
       "category": "public.app-category.developer-tools",
@@ -67,8 +66,5 @@
     "linux": {
       "target": "AppImage"
     }
-  },
-  "dependencies": {
-    "node-fetch": "^2.7.0"
   }
 }
