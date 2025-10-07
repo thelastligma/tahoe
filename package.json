@@ -41,23 +41,19 @@
       "target": [
         {
           "target": "dir",
-          "arch": [
-            "arm64",
-            "x64"
-          ]
+          "arch": ["arm64", "x64"]
         }
       ],
       "extendInfo": {
         "LSUIElement": false,
         "CFBundleDocumentTypes": [
           {
-            "CFBundleTypeExtensions": [
-              "lua"
-            ],
+            "CFBundleTypeExtensions": ["lua"],
             "CFBundleTypeName": "Lua Script",
             "CFBundleTypeRole": "Editor"
           }
-        ]
+        ],
+        "CFBundleIconFile": "icon.icns"
       }
     },
     "win": {

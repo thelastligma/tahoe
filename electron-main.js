@@ -16,9 +16,14 @@ function makeHttpsRequest(url) {
             path: parsedUrl.pathname + parsedUrl.search,
             method: 'GET',
             headers: {
-                'User-Agent': 'Tahoe/1.0.0'
-            }
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                'Accept': 'application/json, text/plain, */*',
+                'Accept-Language': 'en-US,en;q=0.9'
+            },
+            timeout: 10000
         };
+
+        console.log('Making request to:', url);
 
         const req = https.request(options, (res) => {
             let data = '';
@@ -28,20 +33,34 @@ function makeHttpsRequest(url) {
             });
 
             res.on('end', () => {
+                console.log('Response status:', res.statusCode);
+                console.log('Response data length:', data.length);
+                
                 try {
                     if (res.statusCode >= 200 && res.statusCode < 300) {
-                        resolve(JSON.parse(data));
+                        const jsonData = JSON.parse(data);
+                        console.log('Parsed JSON successfully');
+                        resolve(jsonData);
                     } else {
+                        console.error('HTTP error:', res.statusCode, res.statusMessage);
                         reject(new Error(`HTTP ${res.statusCode}: ${res.statusMessage}`));
                     }
                 } catch (error) {
+                    console.error('JSON parse error:', error.message);
+                    console.error('Raw data:', data.substring(0, 200));
                     reject(new Error(`JSON parse error: ${error.message}`));
                 }
             });
         });
 
         req.on('error', (error) => {
+            console.error('Request error:', error.message);
             reject(new Error(`Request error: ${error.message}`));
+        });
+
+        req.on('timeout', () => {
+            req.destroy();
+            reject(new Error('Request timeout'));
         });
 
         req.end();
@@ -101,6 +120,7 @@ ipcMain.handle('opiumware-setting', async (event, key, value) => {
 
 // ScriptHub API handlers using native HTTPS
 ipcMain.handle('scripthub-search', async (event, query, category, mode) => {
+    console.log('ScriptHub search called with:', { query, category, mode });
     try {
         const params = new URLSearchParams();
         params.set('q', query);
@@ -109,6 +129,8 @@ ipcMain.handle('scripthub-search', async (event, query, category, mode) => {
         
         const url = `https://scriptblox.com/api/script/search?${params}`;
         const data = await makeHttpsRequest(url);
+        
+        console.log('Search response:', data.result ? `${data.result.scripts?.length || 0} scripts` : 'No result field');
         return { success: true, result: data.result };
     } catch (error) {
         console.error('ScriptHub search error:', error);
@@ -117,9 +139,12 @@ ipcMain.handle('scripthub-search', async (event, query, category, mode) => {
 });
 
 ipcMain.handle('scripthub-fetch', async (event, scriptId) => {
+    console.log('ScriptHub fetch called with ID:', scriptId);
     try {
         const url = `https://scriptblox.com/api/script/fetch?id=${scriptId}`;
         const data = await makeHttpsRequest(url);
+        
+        console.log('Fetch response:', data ? 'Success' : 'No data');
         return { success: true, result: data };
     } catch (error) {
         console.error('ScriptHub fetch error:', error);
@@ -128,9 +153,12 @@ ipcMain.handle('scripthub-fetch', async (event, scriptId) => {
 });
 
 ipcMain.handle('scripthub-trending', async (event) => {
+    console.log('ScriptHub trending called');
     try {
         const url = 'https://scriptblox.com/api/script/trending';
         const data = await makeHttpsRequest(url);
+        
+        console.log('Trending response:', data.result ? `${data.result.scripts?.length || 0} scripts` : 'No result field');
         return { success: true, result: data.result };
     } catch (error) {
         console.error('ScriptHub trending error:', error);
