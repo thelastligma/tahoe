@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain, Menu } = require('electron');
 const path = require('path');
 const { execute, setting } = require('./main.js');
+const fetch = require('node-fetch');
 
 let mainWindow;
 
@@ -55,10 +56,9 @@ ipcMain.handle('opiumware-setting', async (event, key, value) => {
     }
 });
 
-// ScriptHub API handlers using new API modules
+// ScriptHub API handlers using node-fetch
 ipcMain.handle('scripthub-search', async (event, query, category, mode) => {
     try {
-        const fetch = (await import('node-fetch')).default;
         const params = new URLSearchParams();
         params.set('q', query);
         params.set('max', '50');
@@ -70,15 +70,15 @@ ipcMain.handle('scripthub-search', async (event, query, category, mode) => {
         }
         
         const data = await response.json();
-        return { success: true, result: data.result }; // Return data.result instead of data
+        return { success: true, result: data.result };
     } catch (error) {
+        console.error('ScriptHub search error:', error);
         return { success: false, error: error.message };
     }
 });
 
 ipcMain.handle('scripthub-fetch', async (event, scriptId) => {
     try {
-        const fetch = (await import('node-fetch')).default;
         const response = await fetch(`https://scriptblox.com/api/script/fetch?id=${scriptId}`);
         
         if (!response.ok) {
@@ -88,13 +88,13 @@ ipcMain.handle('scripthub-fetch', async (event, scriptId) => {
         const data = await response.json();
         return { success: true, result: data };
     } catch (error) {
+        console.error('ScriptHub fetch error:', error);
         return { success: false, error: error.message };
     }
 });
 
 ipcMain.handle('scripthub-trending', async (event) => {
     try {
-        const fetch = (await import('node-fetch')).default;
         const response = await fetch('https://scriptblox.com/api/script/trending');
         
         if (!response.ok) {
@@ -102,8 +102,9 @@ ipcMain.handle('scripthub-trending', async (event) => {
         }
         
         const data = await response.json();
-        return { success: true, result: data.result }; // Return data.result instead of data
+        return { success: true, result: data.result };
     } catch (error) {
+        console.error('ScriptHub trending error:', error);
         return { success: false, error: error.message };
     }
 });
