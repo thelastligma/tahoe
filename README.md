@@ -20,10 +20,10 @@ A modern, elegant script executor built with Electron, featuring Script Hub inte
 curl -sSL https://raw.githubusercontent.com/thelastligma/tahoe/main/installer.sh | bash
 ```
 
-### Prerequisites Check 🔍
-Not sure if you have the requirements? Test first:
+### Installation Validation 🔍
+After installation, verify everything works:
 ```bash
-curl -sSL https://raw.githubusercontent.com/thelastligma/tahoe/main/test-installer.sh | bash
+curl -sSL https://raw.githubusercontent.com/thelastligma/tahoe/main/validate.sh | bash
 ```
 
 **Required Dependencies:**
@@ -38,6 +38,20 @@ curl -sSL https://raw.githubusercontent.com/thelastligma/tahoe/main/test-install
 - ✅ **Installs safely** - Copies to /Applications and adds to Launchpad
 - ✅ **Removes restrictions** - Eliminates macOS security warnings
 - ✅ **Cleans up** - Removes temporary build files
+
+## Troubleshooting
+
+### Script Hub Not Loading
+If Script Hub shows no scripts:
+1. Check internet connection
+2. Run the app from Terminal to see console output: `/Applications/Tahoe.app/Contents/MacOS/Tahoe`
+3. Look for API error messages in the console
+
+### Icon Not Showing
+If the Tahoe icon doesn't appear:
+1. Restart Finder: `sudo killall Finder`
+2. Clear icon cache: `sudo rm -rf /Library/Caches/com.apple.iconservices.store`
+3. Refresh Launchpad: `defaults write com.apple.dock ResetLaunchPad -bool true && killall Dock`
 - ✅ Clean up build files
 
 ### Manual Installation
