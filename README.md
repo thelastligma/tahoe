@@ -4,8 +4,6 @@
 
 A modern, elegant script executor built with Electron, featuring Script Hub integration and Opiumware API support.
 
-*Updated with anonymous commits*
-
 ## Features
 
 - 🎨 **Modern UI** - Clean, transparent design with Monaco Editor
@@ -17,19 +15,29 @@ A modern, elegant script executor built with Electron, featuring Script Hub inte
 
 ## Installation
 
-### Automatic Installation (Recommended)
+### Quick Install ⚡
 ```bash
 curl -sSL https://raw.githubusercontent.com/thelastligma/tahoe/main/installer.sh | bash
 ```
 
-**Prerequisites:** Node.js, npm, and git must be installed on your system.
+### Prerequisites Check 🔍
+Not sure if you have the requirements? Test first:
+```bash
+curl -sSL https://raw.githubusercontent.com/thelastligma/tahoe/main/test-installer.sh | bash
+```
 
-The installer will:
-- ✅ Clone the latest source code
-- ✅ Build the application for your architecture
-- ✅ Install to Applications folder
-- ✅ Add to Launchpad
-- ✅ Remove security warnings
+**Required Dependencies:**
+- **Node.js 16+** - Download from [nodejs.org](https://nodejs.org/)
+- **npm** (comes with Node.js)
+- **git** - Install via Xcode Command Line Tools: `xcode-select --install`
+
+### What the installer does:
+- ✅ **Checks dependencies** - Verifies Node.js, npm, and git are installed
+- ✅ **Downloads source** - Clones the latest code from GitHub
+- ✅ **Builds locally** - Compiles for your specific architecture (Intel/ARM64)
+- ✅ **Installs safely** - Copies to /Applications and adds to Launchpad
+- ✅ **Removes restrictions** - Eliminates macOS security warnings
+- ✅ **Cleans up** - Removes temporary build files
 - ✅ Clean up build files
 
 ### Manual Installation
