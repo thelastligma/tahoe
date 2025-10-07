@@ -6,6 +6,9 @@
   "scripts": {
     "start": "electron .",
     "build": "electron-builder",
+    "build:mac": "electron-builder --mac --x64",
+    "build:mac-arm64": "electron-builder --mac --arm64",
+    "build:universal": "electron-builder --mac --universal",
     "dev": "electron . --dev"
   },
   "keywords": [
@@ -37,11 +40,7 @@
       "icon": "build/icon.png",
       "target": [
         {
-          "target": "dmg",
-          "arch": ["arm64", "x64"]
-        },
-        {
-          "target": "zip",
+          "target": "dir",
           "arch": ["arm64", "x64"]
         }
       ],
