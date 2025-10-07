@@ -1,0 +1,69 @@
+{
+  "name": "tahoe-executor",
+  "version": "1.0.0",
+  "description": "Tahoe Executor - Opiumware Script Interface",
+  "main": "electron-main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder",
+    "dev": "electron . --dev"
+  },
+  "keywords": [
+    "executor",
+    "opiumware",
+    "scripting"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^27.0.0",
+    "electron-builder": "^24.6.4",
+    "sharp": "^0.34.4",
+    "svg2png-many": "^0.0.7"
+  },
+  "build": {
+    "appId": "com.tahoe.executor",
+    "productName": "Tahoe",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "**/*",
+      "!node_modules/**/*"
+    ],
+    "mac": {
+      "category": "public.app-category.developer-tools",
+      "icon": "build/icon.png",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["arm64", "x64"]
+        },
+        {
+          "target": "zip",
+          "arch": ["arm64", "x64"]
+        }
+      ],
+      "extendInfo": {
+        "LSUIElement": false,
+        "CFBundleDocumentTypes": [
+          {
+            "CFBundleTypeExtensions": ["lua"],
+            "CFBundleTypeName": "Lua Script",
+            "CFBundleTypeRole": "Editor"
+          }
+        ]
+      }
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
+  },
+  "dependencies": {
+    "node-fetch": "^3.3.2"
+  }
+}

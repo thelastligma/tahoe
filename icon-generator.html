@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: black;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .icon-container {
+            width: 1024px;
+            height: 1024px;
+            background: black;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .box-icon {
+            width: 512px;
+            height: 512px;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="icon-container">
+        <i data-lucide="box" class="box-icon"></i>
+    </div>
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

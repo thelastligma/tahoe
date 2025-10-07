@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tahoe Executor</title>
+    <!-- CORRECTED Tailwind CSS link -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: transparent;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        /* Custom scrollbar for a more native feel */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        .tab-input {
+            background-color: transparent;
+            border: none;
+            outline: none;
+            color: inherit;
+            font: inherit;
+            padding: 0;
+            margin: 0;
+            width: 100%;
+        }
+        .monaco-editor, .monaco-editor .margin, .monaco-editor-background {
+            background-color: transparent !important;
+        }
+        
+        /* Custom range slider styling */
+        input[type="range"], .range-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+            cursor: pointer;
+            height: 24px;
+        }
+        
+        input[type="range"]::-webkit-slider-track, .range-slider::-webkit-slider-track {
+            background: rgba(255, 255, 255, 0.3);
+            height: 8px;
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        input[type="range"]::-webkit-slider-thumb, .range-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            background: rgba(255, 255, 255, 0.9);
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            margin-top: -8px;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb:hover, .range-slider::-webkit-slider-thumb:hover {
+            background: rgba(255, 255, 255, 1);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+        
+        input[type="range"]::-moz-range-track, .range-slider::-moz-range-track {
+            background: rgba(255, 255, 255, 0.3);
+            height: 8px;
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        input[type="range"]::-moz-range-thumb, .range-slider::-moz-range-thumb {
+            background: rgba(255, 255, 255, 0.9);
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Main Application Window -->
+    <div id="app-window" class="w-screen h-screen flex overflow-hidden" style="background: transparent;">
+        
+        <!-- Sidebar -->
+        <aside id="sidebar" class="w-64 h-full flex flex-col flex-shrink-0 transition-all duration-300 group border-r border-white/20" style="background: transparent;">
+            <header class="p-4 h-16 flex items-center justify-between border-b border-white/20">
+                 <div class="flex items-center gap-2">
+                    <i data-lucide="box" class="text-white/90 flex-shrink-0"></i>
+                    <h1 id="sidebar-title" class="text-lg font-bold text-white transition-opacity duration-200 group-[.collapsed]:opacity-0">Tahoe</h1>
+                 </div>
+                 <button id="add-tab-btn" class="text-white/70 hover:text-white hover:bg-white/20 p-1.5 rounded-lg transition-all group-[.collapsed]:hidden">
+                    <i data-lucide="plus" class="w-5 h-5"></i>
+                </button>
+            </header>
+            <nav id="tabs-container" class="flex-grow p-2 space-y-1 overflow-y-auto">
+                <!-- Tabs will be injected here -->
+            </nav>
+            <footer class="p-2 border-t border-white/20">
+                 <button id="toggle-sidebar-btn" class="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium text-white/70 hover:text-white hover:bg-white/20 rounded-lg transition-all group-[.collapsed]:justify-center">
+                    <i data-lucide="chevrons-left" class="flex-shrink-0 transition-transform duration-300 group-[.collapsed]:rotate-180"></i>
+                    <span class="transition-opacity duration-200 group-[.collapsed]:hidden">Collapse</span>
+                </button>
+            </footer>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="flex-grow flex flex-col" style="background: transparent;">
+            <!-- Content Header -->
+            <header class="h-16 flex-shrink-0 flex items-center justify-between px-6 border-b border-white/20" style="background: transparent;">
+                <div class="flex items-center gap-4">
+                    <div id="active-tab-name" class="font-semibold text-white text-lg"></div>
+                    <div id="connection-status" class="flex items-center gap-2 text-xs px-3 py-1.5 rounded-full border border-white/20 text-white/70" style="background: transparent;">
+                        <div class="w-2 h-2 rounded-full bg-gray-400"></div>
+                        <span>Disconnected</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button id="test-connection-btn" class="flex items-center gap-2 px-4 py-2 text-sm text-white font-medium rounded-lg transition-all border border-white/20 hover:bg-white/20" style="background: transparent;">
+                        <i data-lucide="syringe" class="w-4 h-4"></i>
+                        Inject
+                    </button>
+                    <button id="execute-btn" class="flex items-center gap-2 px-4 py-2 text-sm text-white font-semibold rounded-lg transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed border border-white/30 hover:bg-white/20" style="background: transparent;">
+                        <i data-lucide="play" class="w-4 h-4"></i>
+                        Execute
+                    </button>
+                </div>
+            </header>
+
+            <!-- Editor/ScriptHub/Settings Area -->
+            <main class="flex-grow relative">
+                <div id="editor-container" class="absolute inset-0"></div>
+                <div id="scripthub-container" class="absolute inset-0 p-6 overflow-y-auto hidden">
+                    <div class="max-w-4xl mx-auto">
+                        <div class="relative mb-8">
+                            <input id="script-search" type="text" placeholder="Search scripts..." class="w-full p-3 pl-10 rounded-xl border border-white/20 focus:ring-2 focus:ring-white/30 focus:outline-none text-white placeholder:text-white/60" style="background: transparent;">
+                            <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-white/60 w-5 h-5"></i>
+                        </div>
+                        <div id="script-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <!-- Script hub items will be injected here -->
+                        </div>
+                    </div>
+                </div>
+                 <div id="settings-container" class="absolute inset-0 p-8 overflow-y-auto hidden text-white">
+                    <div class="max-w-2xl mx-auto">
+                         <h1 class="text-3xl font-bold mb-8 text-white">Settings</h1>
+                         <div class="space-y-6">
+                            
+                            <!-- Stay on Top -->
+                            <div class="p-6 rounded-xl border border-white/20" style="background: transparent;">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <h3 class="text-xl font-semibold text-white">Stay on Top</h3>
+                                        <p class="text-sm text-white/70 mt-1">Keep window always on top of other windows</p>
+                                    </div>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" id="stay-on-top" class="sr-only peer">
+                                        <div class="w-11 h-6 bg-white/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <!-- Auto Inject -->
+                            <div class="p-6 rounded-xl border border-white/20" style="background: transparent;">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <h3 class="text-xl font-semibold text-white">Auto Inject</h3>
+                                        <p class="text-sm text-white/70 mt-1">Tahoe is going to inject as soon as Roblox is open</p>
+                                    </div>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" id="auto-inject" class="sr-only peer">
+                                        <div class="w-11 h-6 bg-white/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <!-- Port Selection -->
+                            <div class="p-6 rounded-xl border border-white/20" style="background: transparent;">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <h3 class="text-xl font-semibold text-white">Connection Port</h3>
+                                        <p class="text-sm text-white/70 mt-1">Select port for Opiumware connection</p>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <select id="port-select" class="px-3 py-2 rounded-lg border border-white/20 text-white text-sm" style="background: rgba(0,0,0,0.3);">
+                                            <option value="8080">8080</option>
+                                            <option value="8081">8081</option>
+                                            <option value="8082">8082</option>
+                                            <option value="8083">8083</option>
+                                            <option value="8084">8084</option>
+                                            <option value="8085">8085</option>
+                                        </select>
+                                        <button id="connect-port-btn" class="px-3 py-2 rounded-lg border border-white/20 hover:bg-white/20 transition-all">
+                                            <i data-lucide="wifi" class="w-4 h-4 text-white"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Websocket Toggle -->
+                            <div class="p-6 rounded-xl border border-white/20" style="background: transparent;">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <h3 class="text-xl font-semibold text-white">Websocket Toggle</h3>
+                                        <p class="text-sm text-white/70 mt-1">Enable or disable websocket (WSToggle) for Opiumware</p>
+                                    </div>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" id="websocket-toggle" class="sr-only peer">
+                                        <div class="w-11 h-6 bg-white/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <!-- Redirect Errors -->
+                            <div class="p-6 rounded-xl border border-white/20" style="background: transparent;">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <h3 class="text-xl font-semibold text-white">Redirect Errors</h3>
+                                        <p class="text-sm text-white/70 mt-1">Redirect runtime errors to Opiumware (RedirectErrors)</p>
+                                    </div>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" id="redirect-errors" class="sr-only peer" checked>
+                                        <div class="w-11 h-6 bg-white/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                         </div>
+                    </div>
+                </div>
+                
+                <!-- Execution Notification -->
+                <div id="notification" class="absolute bottom-6 right-6 border border-white/30 text-white py-3 px-6 rounded-xl shadow-lg opacity-0 transform translate-y-2 transition-all duration-300 flex items-center gap-2" style="background: transparent;">
+                    <i data-lucide="check-circle" class="w-5 h-5"></i>
+                    <span id="notification-text"></span>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Monaco Editor Loader -->
+    <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.44.0/min/vs/loader.js"></script>
+
+    <script type="module">
+        lucide.createIcons();
+
+        // --- DOM Elements ---
+        const appWindow = document.getElementById('app-window');
+        const sidebar = document.getElementById('sidebar');
+        const toggleSidebarBtn = document.getElementById('toggle-sidebar-btn');
+        const tabsContainer = document.getElementById('tabs-container');
+        const addTabBtn = document.getElementById('add-tab-btn');
+        const editorContainer = document.getElementById('editor-container');
+        const scripthubContainer = document.getElementById('scripthub-container');
+        const settingsContainer = document.getElementById('settings-container');
+        const notification = document.getElementById('notification');
+        const notificationText = document.getElementById('notification-text');
+        const scriptSearch = document.getElementById('script-search');
+        const scriptList = document.getElementById('script-list');
+        const executeBtn = document.getElementById('execute-btn');
+        const testConnectionBtn = document.getElementById('test-connection-btn');
+        const connectionStatus = document.getElementById('connection-status');
+        const activeTabName = document.getElementById('active-tab-name');
+        
+        // Additional settings elements
+        const stayOnTopCheckbox = document.getElementById('stay-on-top');
+        const autoInjectCheckbox = document.getElementById('auto-inject');
+        const portSelect = document.getElementById('port-select');
+        const connectPortBtn = document.getElementById('connect-port-btn');
+        const websocketToggleCheckbox = document.getElementById('websocket-toggle');
+        const redirectErrorsCheckbox = document.getElementById('redirect-errors');
+
+        // --- State ---
+        let editor;
+        let monacoInstance;
+        let tabs = [];
+        let activeTabId = null;
+        let untitledCounter = 1;
+        const SCRIPT_HUB_ID = 'script-hub';
+        const SETTINGS_ID = 'settings';
+
+        // --- Script Hub State ---
+        let currentScripts = [];
+        let isLoading = false;
+
+        // --- Settings Logic ---
+        function updateConnectionStatus(connected, port = null) {
+            const statusIcon = connectionStatus.querySelector('div');
+            const statusText = connectionStatus.querySelector('span');
+            
+            if (connected) {
+                statusIcon.className = 'w-2 h-2 rounded-full bg-green-400';
+                statusText.textContent = port ? `Connected (Port ${port})` : 'Connected';
+                connectionStatus.className = 'flex items-center gap-2 text-xs px-3 py-1.5 rounded-full border border-green-400/30 text-green-300';
+            } else {
+                statusIcon.className = 'w-2 h-2 rounded-full bg-gray-400';
+                statusText.textContent = 'Disconnected';
+                connectionStatus.className = 'flex items-center gap-2 text-xs px-3 py-1.5 rounded-full border border-white/20 text-white/70';
+            }
+        }
+
+        function updateTransparency(value) {
+            // Transparency function kept but doesn't affect backgrounds anymore
+            const intValue = parseInt(value, 10);
+            // You can use this to control other transparency effects if needed
+        }
+
+        function applyInitialSettings() {
+            // Initialize settings with default values
+            console.log('Settings initialized');
+        }
+
+        // --- Monaco Editor Initialization ---
+        require.config({ paths: { 'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.44.0/min/vs' }});
+        require(['vs/editor/editor.main'], function(monaco) {
+            monacoInstance = monaco;
+            editor = monaco.editor.create(editorContainer, {
+                value: '', language: 'javascript', automaticLayout: true,
+                theme: 'vs-dark',
+                fontSize: 14, minimap: { enabled: false },
+                scrollbar: { verticalScrollbarSize: 8, horizontalScrollbarSize: 8 },
+                hover: { enabled: false }, quickSuggestions: false,
+                parameterHints: { enabled: false }, suggestOnTriggerCharacters: false,
+            });
+
+            applyInitialSettings();
+
+            addTab(SCRIPT_HUB_ID, 'Script Hub', '', true);
+            addTab(SETTINGS_ID, 'Settings', '', true);
+            addTab(null, 'Untitled Script');
+            
+            loadTrendingScripts();
+            if (tabs.length > 2) switchTab(tabs[2].id);
+            else if (tabs.length > 0) switchTab(tabs[0].id);
+        });
+        
+        // --- Tab Management ---
+        function addTab(id = null, name = null, content = `// Welcome to Tahoe!\n\n`, isPinned = false) {
+            const tabId = id || `tab-${Date.now()}`;
+            const tabName = name || `Untitled Script ${++untitledCounter}`;
+            const newTab = { id: tabId, name: tabName, model: isPinned ? null : monacoInstance.editor.createModel(content, 'javascript'), viewState: null, isPinned: isPinned };
+            tabs.push(newTab);
+            renderTabs();
+            if (!isPinned) {
+                switchTab(tabId);
+            } else if (tabs.length === 1) { 
+                switchTab(tabId);
+            }
+        }
+
+        function switchTab(tabId) {
+            if (activeTabId && !tabs.find(t => t.id === activeTabId)?.isPinned) {
+                const currentTab = tabs.find(t => t.id === activeTabId);
+                if (currentTab) currentTab.viewState = editor.saveViewState();
+            }
+            
+            activeTabId = tabId;
+            const newTab = tabs.find(t => t.id === tabId);
+            activeTabName.textContent = newTab.name;
+            
+            editorContainer.classList.add('hidden');
+            scripthubContainer.classList.add('hidden');
+            settingsContainer.classList.add('hidden');
+            executeBtn.disabled = true;
+
+            if (tabId === SCRIPT_HUB_ID) {
+                scripthubContainer.classList.remove('hidden');
+                if (currentScripts.length === 0) {
+                    loadTrendingScripts();
+                }
+            } else if (tabId === SETTINGS_ID) {
+                settingsContainer.classList.remove('hidden');
+            } else {
+                editorContainer.classList.remove('hidden');
+                executeBtn.disabled = false;
+                if (newTab) {
+                    editor.setModel(newTab.model);
+                    if (newTab.viewState) editor.restoreViewState(newTab.viewState);
+                    editor.focus();
+                }
+            }
+            renderTabs();
+        }
+
+        function closeTab(tabId) {
+            const tabIndex = tabs.findIndex(t => t.id === tabId);
+            if (tabIndex === -1) return;
+            const [removedTab] = tabs.splice(tabIndex, 1);
+            if(removedTab.model) removedTab.model.dispose();
+            if (activeTabId === tabId) switchTab(tabs[Math.max(0, tabIndex - 1)].id);
+            renderTabs();
+        }
+
+        function renderTabs() {
+            tabsContainer.innerHTML = '';
+            tabs.forEach(tab => {
+                const tabEl = document.createElement('div');
+                const isActive = activeTabId === tab.id;
+                tabEl.className = `group flex items-center justify-between px-3 py-2 cursor-pointer rounded-lg text-sm transition-all ${ isActive ? 'border border-white/30 text-white font-semibold' : 'text-white/70 hover:text-white hover:border hover:border-white/20' }`;
+                tabEl.style.background = 'transparent';
+                tabEl.dataset.tabId = tab.id;
+                
+                let iconName = (tab.id === SCRIPT_HUB_ID) ? 'layout-grid' : (tab.id === SETTINGS_ID) ? 'settings' : 'file-code-2';
+                const nameSpan = document.createElement('span');
+                nameSpan.className = "flex items-center gap-2.5 truncate";
+                nameSpan.innerHTML = `<i data-lucide="${iconName}" class="w-4 h-4 flex-shrink-0"></i> <span class="transition-opacity duration-200 group-[.collapsed]:hidden">${tab.name}</span>`;
+                tabEl.appendChild(nameSpan);
+
+                if (!tab.isPinned) {
+                    const closeBtn = document.createElement('button');
+                    closeBtn.innerHTML = `<i data-lucide="x" class="w-4 h-4"></i>`;
+                    closeBtn.className = 'opacity-0 group-hover:opacity-100 text-white/50 hover:text-white transition-opacity duration-200 group-[.collapsed]:hidden';
+                    closeBtn.onclick = (e) => { e.stopPropagation(); closeTab(tab.id); };
+                    tabEl.appendChild(closeBtn);
+                }
+                
+                tabEl.addEventListener('click', () => switchTab(tab.id));
+
+                if (!tab.isPinned) {
+                    tabEl.addEventListener('dblclick', () => {
+                        // Prevent renaming when sidebar is collapsed or if an input already exists
+                        if (sidebar.classList.contains('collapsed') || nameSpan.querySelector('input')) return;
+
+                        const textSpan = nameSpan.querySelector('span');
+                        if (!textSpan) return; // Safety check
+
+                        // Create and configure the input element
+                        const input = document.createElement('input');
+                        input.type = 'text';
+                        input.value = tab.name;
+                        input.className = 'tab-input';
+                        
+                        // Replace the text span with the input field for editing
+                        nameSpan.replaceChild(input, textSpan);
+
+                        input.focus();
+                        input.select();
+
+                        // --- Event handlers for the input field ---
+                        const finishEditing = () => {
+                            // Clean up listeners to prevent memory leaks or double-firing
+                            input.removeEventListener('blur', finishEditing);
+                            input.removeEventListener('keydown', handleKeyDown);
+
+                            // Update the tab's name in our data state
+                            tab.name = input.value.trim() || 'Untitled Script';
+                            
+                            // If the edited tab is the active one, update the main header
+                            if (tab.id === activeTabId) {
+                                activeTabName.textContent = tab.name;
+                            }
+                            
+                            // Redraw all tabs to finalize the change
+                            renderTabs();
+                        };
+
+                        const handleKeyDown = (e) => {
+                            if (e.key === 'Enter') {
+                                finishEditing();
+                            } else if (e.key === 'Escape') {
+                                // On Escape, just redraw the tabs to cancel the edit
+                                input.removeEventListener('blur', finishEditing);
+                                input.removeEventListener('keydown', handleKeyDown);
+                                renderTabs();
+                            }
+                        };
+
+                        // Add listeners for blur (clicking away) and key presses
+                        input.addEventListener('blur', finishEditing);
+                        input.addEventListener('keydown', handleKeyDown);
+                    });
+                }
+                tabsContainer.appendChild(tabEl);
+            });
+            lucide.createIcons();
+        }
+        
+        // --- Script Hub Logic ---
+        async function loadTrendingScripts() {
+            if (isLoading) return;
+            
+            showLoadingState(true);
+            try {
+                const result = await window.electronAPI.scripthub.trending();
+                if (result.success && result.result.scripts) {
+                    currentScripts = result.result.scripts;
+                    renderScriptHub(currentScripts);
+                } else {
+                    showError('Failed to load trending scripts');
+                }
+            } catch (error) {
+                showError('Error loading trending scripts: ' + error.message);
+            } finally {
+                showLoadingState(false);
+            }
+        }
+
+        async function searchScripts(query) {
+            if (!query.trim() || isLoading) return;
+            
+            showLoadingState(true);
+            try {
+                const result = await window.electronAPI.scripthub.search(query, '', 'free');
+                if (result.success && result.result.scripts) {
+                    currentScripts = result.result.scripts;
+                    renderScriptHub(currentScripts);
+                } else {
+                    showError('No scripts found');
+                }
+            } catch (error) {
+                showError('Search error: ' + error.message);
+            } finally {
+                showLoadingState(false);
+            }
+        }
+
+        function renderScriptHub(scriptsToRender = []) {
+            scriptList.innerHTML = '';
+            
+            if (scriptsToRender.length === 0) {
+                scriptList.innerHTML = `
+                    <div class="col-span-1 md:col-span-2 lg:col-span-3 text-center text-white/50 py-10">
+                        <i data-lucide="folder-open" class="w-16 h-16 mx-auto mb-4 opacity-50"></i>
+                        <h3 class="text-xl font-semibold text-white/80">No Scripts Found</h3>
+                        <p class="mt-2 text-sm">Try searching for something else.</p>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            scriptsToRender.forEach(script => {
+                const card = document.createElement('div');
+                card.className = 'p-6 rounded-xl shadow-md border border-white/20 flex flex-col justify-between hover:border-white/30 transition-all';
+                card.style.background = 'transparent';
+                
+                const title = script.title || 'Untitled Script';
+                const game = script.game?.name || 'Universal';
+                const views = script.views || 0;
+                const verified = script.verified ? '<span class="text-green-400 text-xs">✓ VERIFIED</span>' : '';
+                const keySystem = script.key ? '<span class="text-yellow-400 text-xs">🔑 KEY</span>' : '';
+                
+                card.innerHTML = `
+                    <div>
+                        <h3 class="font-semibold text-lg text-white">${title}</h3>
+                        <p class="text-sm text-white/70 mt-1">Game: ${game}</p>
+                        <p class="text-xs text-white/50 mt-1">${views.toLocaleString()} views</p>
+                        <div class="flex gap-2 mt-2">${verified}${keySystem}</div>
+                    </div>
+                    <div class="flex items-center gap-2 mt-4">
+                        <button data-script-id="${script._id || script.id}" class="execute-btn flex items-center justify-center gap-2 flex-1 text-sm text-white font-semibold py-2 px-3 rounded-lg transition-all border border-white/30 hover:bg-white/20" style="background: transparent;">
+                            <i data-lucide="play" class="w-4 h-4"></i> Execute
+                        </button>
+                        <button data-script-id="${script._id || script.id}" class="load-btn flex items-center justify-center gap-2 flex-1 text-sm text-white font-semibold py-2 px-3 rounded-lg transition-all border border-white/20 hover:bg-white/20" style="background: transparent;">
+                            <i data-lucide="arrow-down-to-line" class="w-4 h-4"></i> Load
+                        </button>
+                    </div>
+                `;
+                scriptList.appendChild(card);
+            });
+            
+            lucide.createIcons();
+        }
+
+        async function executeScript(scriptId) {
+            try {
+                const script = currentScripts.find(s => (s._id || s.id) === scriptId);
+                if (script && script.script) {
+                    const code = script.script;
+                    const executeResult = await window.electronAPI.opiumware.execute(code, "ALL");
+                    if (executeResult.success) {
+                        showNotification('Script executed successfully!');
+                    } else {
+                        showNotification('Execution failed: ' + executeResult.error, 'error');
+                    }
+                } else {
+                    showNotification('Script not found or no code available', 'error');
+                }
+            } catch (error) {
+                showNotification('Error: ' + error.message, 'error');
+            }
+        }
+
+        async function loadScript(scriptId) {
+            try {
+                const script = currentScripts.find(s => (s._id || s.id) === scriptId);
+                if (script && script.script) {
+                    const code = script.script;
+                    const title = script.title || 'Downloaded Script';
+                    
+                    // Create new tab with the script
+                    addTab(null, title, code);
+                    showNotification('Script loaded to new tab!');
+                } else {
+                    showNotification('Script not found or no code available', 'error');
+                }
+            } catch (error) {
+                showNotification('Error: ' + error.message, 'error');
+            }
+        }
+
+        function showLoadingState(show) {
+            isLoading = show;
+            if (show) {
+                scriptList.innerHTML = `
+                    <div class="col-span-1 md:col-span-2 lg:col-span-3 text-center text-white/50 py-10">
+                        <i data-lucide="loader-2" class="w-16 h-16 mx-auto mb-4 animate-spin"></i>
+                        <h3 class="text-xl font-semibold text-white/80">Loading Scripts...</h3>
+                        <p class="mt-2 text-sm">Please wait while we fetch the latest scripts.</p>
+                    </div>
+                `;
+                lucide.createIcons();
+            }
+        }
+
+        function showError(message) {
+            scriptList.innerHTML = `
+                <div class="col-span-1 md:col-span-2 lg:col-span-3 text-center text-white/50 py-10">
+                    <i data-lucide="alert-triangle" class="w-16 h-16 mx-auto mb-4 text-red-400"></i>
+                    <h3 class="text-xl font-semibold text-white/80">Error</h3>
+                    <p class="mt-2 text-sm">${message}</p>
+                </div>
+            `;
+            lucide.createIcons();
+        }
+        
+        function showNotification(message, type = 'success') {
+            notificationText.textContent = message;
+            
+            // Reset classes
+            notification.className = 'absolute bottom-6 right-6 border text-white py-3 px-6 rounded-xl shadow-lg opacity-0 transform translate-y-2 transition-all duration-300 flex items-center gap-2';
+            notification.style.background = 'transparent';
+            
+            // Add type-specific classes
+            if (type === 'error') {
+                notification.classList.add('border-red-400/30');
+                notification.querySelector('i').setAttribute('data-lucide', 'alert-circle');
+            } else {
+                notification.classList.add('border-green-400/30');
+                notification.querySelector('i').setAttribute('data-lucide', 'check-circle');
+            }
+            
+            lucide.createIcons();
+            notification.classList.remove('opacity-0', 'translate-y-2');
+            setTimeout(() => notification.classList.add('opacity-0', 'translate-y-2'), 3000);
+        }
+
+        // --- Event Listeners ---
+        addTabBtn.addEventListener('click', () => addTab());
+        toggleSidebarBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('collapsed');
+            sidebar.classList.toggle('w-64');
+            sidebar.classList.toggle('w-16');
+        });
+
+        testConnectionBtn.addEventListener('click', async () => {
+            try {
+                testConnectionBtn.disabled = true;
+                testConnectionBtn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Testing...';
+                
+                const result = await window.electronAPI.opiumware.execute('print("Connection test successful!")', "ALL");
+                
+                if (result.success) {
+                    showNotification('Successfully connected to Opiumware!');
+                    // Extract port from result message
+                    const portMatch = result.result.match(/port: (\d+)/);
+                    const port = portMatch ? portMatch[1] : null;
+                    updateConnectionStatus(true, port);
+                } else {
+                    showNotification(`Connection failed: ${result.error}`, 'error');
+                    updateConnectionStatus(false);
+                }
+            } catch (error) {
+                showNotification(`Connection error: ${error.message}`, 'error');
+                updateConnectionStatus(false);
+            } finally {
+                testConnectionBtn.disabled = false;
+                testConnectionBtn.innerHTML = '<i data-lucide="syringe" class="w-4 h-4"></i> Inject';
+                lucide.createIcons();
+            }
+        });
+
+        executeBtn.addEventListener('click', async () => {
+             const activeTab = tabs.find(t => t.id === activeTabId);
+             if(activeTab && !activeTab.isPinned){
+                const code = activeTab.model.getValue();
+                console.log(`Executing script: ${activeTab.name}`, code);
+                
+                // Execute script through Opiumware API
+                try {
+                    executeBtn.disabled = true;
+                    executeBtn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Executing...';
+                    
+                    const result = await window.electronAPI.opiumware.execute(code, "ALL");
+                    
+                    if (result.success) {
+                        showNotification(`'${activeTab.name}' executed successfully!`);
+                        console.log("Execution result:", result.result);
+                    } else {
+                        showNotification(`Execution failed: ${result.error}`, 'error');
+                        console.error("Execution error:", result.error);
+                    }
+                } catch (error) {
+                    showNotification(`Execution error: ${error.message}`, 'error');
+                    console.error("Execution error:", error);
+                } finally {
+                    executeBtn.disabled = false;
+                    executeBtn.innerHTML = '<i data-lucide="play" class="w-4 h-4"></i> Execute';
+                    lucide.createIcons();
+                }
+             }
+        });
+        scriptSearch.addEventListener('input', (e) => {
+            const query = e.target.value;
+            if (query) {
+                searchScripts(query);
+            } else {
+                loadTrendingScripts();
+            }
+        });
+        scriptList.addEventListener('click', async (e) => {
+            const button = e.target.closest('button[data-script-id]');
+            if(!button) return;
+            
+            const scriptId = button.dataset.scriptId;
+            
+            if (button.classList.contains('execute-btn')) {
+                button.disabled = true;
+                button.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Executing...';
+                
+                try {
+                    await executeScript(scriptId);
+                } catch (error) {
+                    showNotification(`Execution error: ${error.message}`, 'error');
+                } finally {
+                    button.disabled = false;
+                    button.innerHTML = '<i data-lucide="play" class="w-4 h-4"></i> Execute';
+                    lucide.createIcons();
+                }
+            } else if (button.classList.contains('load-btn')) {
+                button.disabled = true;
+                button.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Loading...';
+                
+                try {
+                    await loadScript(scriptId);
+                } catch (error) {
+                    showNotification(`Load error: ${error.message}`, 'error');
+                } finally {
+                    button.disabled = false;
+                    button.innerHTML = '<i data-lucide="arrow-down-to-line" class="w-4 h-4"></i> Load';
+                    lucide.createIcons();
+                }
+            }
+        });
+        
+        // Settings functionality
+        stayOnTopCheckbox.addEventListener('change', (e) => {
+            console.log('Stay on top:', e.target.checked ? 'enabled' : 'disabled');
+            if (window.electronAPI && window.electronAPI.setAlwaysOnTop) {
+                window.electronAPI.setAlwaysOnTop(e.target.checked);
+            }
+            showNotification(`Stay on top ${e.target.checked ? 'enabled' : 'disabled'}`);
+        });
+        
+        autoInjectCheckbox.addEventListener('change', (e) => {
+            console.log('Auto inject:', e.target.checked ? 'enabled' : 'disabled');
+            showNotification(`Auto inject ${e.target.checked ? 'enabled' : 'disabled'}`);
+        });
+        
+        websocketToggleCheckbox.addEventListener('change', (e) => {
+            console.log('Websocket toggle:', e.target.checked ? 'enabled' : 'disabled');
+            showNotification(`Websocket ${e.target.checked ? 'enabled' : 'disabled'}`);
+        });
+        
+        redirectErrorsCheckbox.addEventListener('change', (e) => {
+            console.log('Redirect errors:', e.target.checked ? 'enabled' : 'disabled');
+            showNotification(`Error redirection ${e.target.checked ? 'enabled' : 'disabled'}`);
+        });
+        
+        connectPortBtn.addEventListener('click', async () => {
+            const selectedPort = portSelect.value;
+            console.log(`Connecting to port: ${selectedPort}`);
+            
+            try {
+                connectPortBtn.disabled = true;
+                connectPortBtn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin text-white"></i>';
+                
+                // Update the inject button to use selected port
+                const result = await window.electronAPI.opiumware.execute('print("Connection test successful!")', "ALL");
+                
+                if (result.success) {
+                    showNotification(`Successfully connected to port ${selectedPort}!`);
+                    updateConnectionStatus(true, selectedPort);
+                } else {
+                    showNotification(`Connection failed on port ${selectedPort}: ${result.error}`, 'error');
+                    updateConnectionStatus(false);
+                }
+            } catch (error) {
+                showNotification(`Connection error on port ${selectedPort}: ${error.message}`, 'error');
+                updateConnectionStatus(false);
+            } finally {
+                connectPortBtn.disabled = false;
+                connectPortBtn.innerHTML = '<i data-lucide="wifi" class="w-4 h-4 text-white"></i>';
+                lucide.createIcons();
+            }
+        });
+
+    </script>
+</body>
+</html>
+
+
+
